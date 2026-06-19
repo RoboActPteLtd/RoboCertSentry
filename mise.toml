@@ -1,0 +1,10 @@
+# Pinned toolchain so contributors and CI resolve the same versions.
+# Why pinned: the PSL resolver relies on ext-intl (IDN) behaviour, which can
+# differ across PHP builds; pinning keeps domain normalisation deterministic.
+[tools]
+php = "8.4"
+"composer" = "2"
+
+[env]
+# Keep Composer from touching global state on shared machines.
+COMPOSER_NO_INTERACTION = "1"

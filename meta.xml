@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+    <id>robocertsentry</id>
+    <name>RoboCertSentry</name>
+    <description>Track and guard against Let's Encrypt rate limits before requests are made.</description>
+    <category>security</category>
+    <version>0.1.0</version>
+    <release>1</release>
+    <vendor>RoboAct</vendor>
+    <url>https://roboact.com.sg</url>
+    <plesk_min_version>18.0.0</plesk_min_version>
+    <os>unix</os>
+</module>
