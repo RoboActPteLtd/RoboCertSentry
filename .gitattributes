@@ -1,0 +1,5 @@
+# Normalise line endings so the PSL data file and PHP sources stay LF in the
+# repository regardless of the contributor's platform.
+* text=auto eol=lf
+*.png binary
+*.dat text eol=lf
