@@ -1,0 +1,90 @@
+<?php
+/**
+ * Pre-flight check: paste the identifiers a certificate would cover and see, before
+ * the request is ever sent, whether Let's Encrypt would accept it and whether a
+ * wildcard would relieve pressure. All wording and flags come from the
+ * PreflightView model; this template only lays them out.
+ *
+ * @var RoboAct\CertSentry\Preflight\PreflightView|null $preflight
+ * @var string $identifiers
+ */
+$preflight = $this->preflight;
+$identifiers = htmlspecialchars((string) $this->identifiers, ENT_QUOTES);
+
+$when = static function (?\DateTimeImmutable $instant): string {
+    return $instant === null ? '-' : htmlspecialchars($instant->format('Y-m-d H:i') . ' UTC', ENT_QUOTES);
+};
+?>
+<style>
+.rcs-form textarea{width:100%;max-width:640px;min-height:90px;font-family:monospace}
+.rcs-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-weight:600}
+.rcs-badge--ok{background:#dcfce7;color:#166534}
+.rcs-badge--block{background:#fee2e2;color:#991b1b}
+.rcs-table{border-collapse:collapse;width:100%;max-width:900px;margin-top:12px}
+.rcs-table th,.rcs-table td{padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:left}
+.rcs-row--block{background:#fef2f2}
+.rcs-row--na{color:#9ca3af}
+.rcs-suggest{margin-top:16px;padding:12px 16px;border-left:4px solid #2563eb;background:#eff6ff;max-width:880px}
+.rcs-suggest--blocked{border-left-color:#d97706;background:#fffbeb}
+.rcs-muted{color:#6b7280}
+</style>
+
+<form class="rcs-form" method="post" action="">
+    <p><label for="identifiers">Identifiers (one per line, or comma/space separated). Wildcards like <code>*.example.com</code> are allowed.</label></p>
+    <textarea id="identifiers" name="identifiers"><?= $identifiers ?></textarea>
+    <p><button type="submit" class="btn btn-primary">Check</button></p>
+</form>
+
+<?php if (isset($this->error)): ?>
+    <p class="rcs-badge rcs-badge--block"><?= htmlspecialchars((string) $this->error, ENT_QUOTES) ?></p>
+<?php endif; ?>
+
+<?php if ($preflight !== null): ?>
+    <h3>
+        <?php if ($preflight->isAllowed()): ?>
+            <span class="rcs-badge rcs-badge--ok"><?= htmlspecialchars($preflight->statusHeadline(), ENT_QUOTES) ?></span>
+        <?php else: ?>
+            <span class="rcs-badge rcs-badge--block"><?= htmlspecialchars($preflight->statusHeadline(), ENT_QUOTES) ?></span>
+        <?php endif; ?>
+        <?php if ($preflight->isRenewal()): ?>
+            <span class="rcs-muted">(recognised as a renewal)</span>
+        <?php endif; ?>
+    </h3>
+
+    <?php if (!$preflight->isAllowed() && $preflight->retryAt() !== null): ?>
+        <p class="rcs-muted">All blocking limits clear by <?= $when($preflight->retryAt()) ?>.</p>
+    <?php endif; ?>
+
+    <table class="rcs-table">
+        <thead>
+            <tr><th>Limit</th><th>Bucket</th><th>Used / limit</th><th>Remaining</th><th>Status</th><th>Clears</th></tr>
+        </thead>
+        <tbody>
+        <?php foreach ($preflight->limitRows() as $row): ?>
+            <?php
+            $class = $row['blocking'] ? 'rcs-row--block' : ($row['applicable'] ? '' : 'rcs-row--na');
+            $status = $row['blocking'] ? 'Blocking' : ($row['applicable'] ? 'OK' : 'Not applicable');
+            ?>
+            <tr class="<?= $class ?>">
+                <td><?= htmlspecialchars((string) $row['label'], ENT_QUOTES) ?></td>
+                <td><?= htmlspecialchars((string) $row['bucketKey'], ENT_QUOTES) ?></td>
+                <td><?= (int) $row['used'] ?> / <?= (int) $row['capacity'] ?></td>
+                <td><?= (int) $row['remaining'] ?></td>
+                <td><?= $status ?></td>
+                <td><?= $when($row['retryAt']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <?php foreach ($preflight->suggestionRows() as $suggestion): ?>
+        <div class="rcs-suggest <?= $suggestion['actionable'] ? '' : 'rcs-suggest--blocked' ?>">
+            <strong>Consolidation suggestion: <?= htmlspecialchars((string) $suggestion['wildcard'], ENT_QUOTES) ?></strong>
+            <p><?= htmlspecialchars((string) $suggestion['reason'], ENT_QUOTES) ?></p>
+            <p class="rcs-muted">
+                Would reclaim <?= (int) $suggestion['bucketsSaved'] ?> registered-domain slot(s) by replacing
+                <?= count($suggestion['hosts']) ?> separate certificate(s).
+            </p>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>

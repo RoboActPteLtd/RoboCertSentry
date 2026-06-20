@@ -37,3 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   domain and per-account usage the dashboard shows, counted identically to the guard.
 - Pre-flight presentation: PreflightPresenter and PreflightView shape a guard
   decision and any wildcard advice into a render-ready view for the UI.
+- Dashboard reporting: DashboardReportBuilder and DashboardReport assemble the
+  per-registered-domain and account-wide usage the panel renders, so the Plesk
+  controller stays a thin pass-through.
+- Plesk Obsidian wrapper under plib/: a composition-root container, an event
+  listener that reconciles the cert inventory on cert-adjacent events (the
+  workaround for Plesk having no issuance event), Plesk adapters for the
+  certificate inventory and DNS-01 capability ports, an IndexController with usage
+  and pre-flight views, scheduled reconcile and log-import scripts, and
+  install/uninstall task registration. The Plesk-bound layer is thin, delegates to
+  the tested core, and is marked at every point that requires a live Plesk box.
+- INTEGRATION.md documenting exactly what must be verified on a live Plesk install
+  and the configurable extension settings.

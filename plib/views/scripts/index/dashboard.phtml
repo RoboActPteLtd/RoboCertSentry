@@ -1,0 +1,69 @@
+<?php
+/**
+ * Usage dashboard: each registered domain's standing against the Let's Encrypt
+ * limits, plus the account-wide new-orders limit. The template is intentionally
+ * logic-free; everything shown is pre-computed in the DashboardReport view model.
+ *
+ * @var RoboAct\CertSentry\Reporting\DashboardReport $report
+ */
+$report = $this->report;
+
+$meter = static function (int $used, int $capacity): string {
+    $pct = $capacity > 0 ? min(100, (int) round($used / $capacity * 100)) : 0;
+    $state = $pct >= 100 ? 'full' : ($pct >= 80 ? 'warn' : 'ok');
+
+    return '<span class="rcs-meter rcs-meter--' . $state . '">'
+        . '<span class="rcs-meter__fill" style="width:' . $pct . '%"></span></span>';
+};
+
+$when = static function (?\DateTimeImmutable $instant): string {
+    return $instant === null ? '-' : htmlspecialchars($instant->format('Y-m-d H:i') . ' UTC', ENT_QUOTES);
+};
+?>
+<style>
+.rcs-meter{display:inline-block;width:160px;height:10px;background:#e5e7eb;border-radius:5px;vertical-align:middle;overflow:hidden}
+.rcs-meter__fill{display:block;height:100%}
+.rcs-meter--ok .rcs-meter__fill{background:#16a34a}
+.rcs-meter--warn .rcs-meter__fill{background:#d97706}
+.rcs-meter--full .rcs-meter__fill{background:#dc2626}
+.rcs-table{border-collapse:collapse;width:100%;max-width:900px}
+.rcs-table th,.rcs-table td{padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:left}
+.rcs-muted{color:#6b7280}
+</style>
+
+<h3>Certificates per registered domain</h3>
+<p class="rcs-muted">Let's Encrypt allows 50 certificates per registered domain over a rolling 7 days. Renewals are exempt.</p>
+
+<?php if ($report->domainUsages() === []): ?>
+    <p class="rcs-muted">No registered domains with recorded issuances yet.</p>
+<?php else: ?>
+    <table class="rcs-table">
+        <thead>
+            <tr><th>Registered domain</th><th>Usage</th><th>Used / limit</th><th>Remaining</th><th>Next slot frees</th></tr>
+        </thead>
+        <tbody>
+        <?php foreach ($report->domainUsages() as $usage): ?>
+            <tr>
+                <td><?= htmlspecialchars($usage->bucketKey(), ENT_QUOTES) ?></td>
+                <td><?= $meter($usage->used(), $usage->capacity()) ?></td>
+                <td><?= (int) $usage->used() ?> / <?= (int) $usage->capacity() ?></td>
+                <td><?= (int) $usage->remaining() ?></td>
+                <td><?= $usage->isAtCapacity() ? $when($usage->nextSlotAt()) : '<span class="rcs-muted">-</span>' ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+<?php endif; ?>
+
+<h3>New orders for this account</h3>
+<p class="rcs-muted">300 new orders per account over a rolling 3 hours.</p>
+<table class="rcs-table">
+    <tbody>
+        <tr>
+            <td><?= htmlspecialchars($report->accountUsage()->bucketKey(), ENT_QUOTES) ?></td>
+            <td><?= $meter($report->accountUsage()->used(), $report->accountUsage()->capacity()) ?></td>
+            <td><?= (int) $report->accountUsage()->used() ?> / <?= (int) $report->accountUsage()->capacity() ?></td>
+            <td><?= (int) $report->accountUsage()->remaining() ?> remaining</td>
+        </tr>
+    </tbody>
+</table>
