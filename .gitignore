@@ -1,4 +1,7 @@
 /vendor/
+# Local ACME sim generates CA + server keys at runtime; never commit secrets.
+/tools/local-acme/certs/
+/tools/local-acme/*.minica.pem
 /.phpunit.cache/
 /.phpunit.result.cache
 /build/

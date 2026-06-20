@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use RoboAct\CertSentry\Ingest\CertificateInventory;
+use RoboAct\CertSentry\Ingest\LetsEncryptIssuer;
 use RoboAct\CertSentry\Ingest\ObservedCertificate;
 
 /**
@@ -89,17 +90,17 @@ final class Modules_Robocertsentry_Plesk_CertificateInventory implements Certifi
 
     /**
      * Whether the certificate was issued by Let's Encrypt, judged from the issuer
-     * organisation and common name. Matches the production and staging issuer
-     * strings ("Let's Encrypt", "ISRG").
+     * organisation and common name. Delegates to the tested core matcher, which is
+     * robust to how the parser renders the issuer (a live box returned the issuer
+     * without its apostrophe).
      *
      * @param array<string, mixed> $parsed
      */
     private function isLetsEncrypt(array $parsed): bool
     {
         $issuer = $parsed['issuer'] ?? [];
-        $haystack = strtolower(trim((string) ($issuer['O'] ?? '') . ' ' . (string) ($issuer['CN'] ?? '')));
 
-        return str_contains($haystack, "let's encrypt") || str_contains($haystack, 'isrg');
+        return LetsEncryptIssuer::matches((string) ($issuer['O'] ?? ''), (string) ($issuer['CN'] ?? ''));
     }
 
     /**

@@ -1,0 +1,17 @@
+# Generates a self-signed certificate whose issuer organisation matches the real
+# Let's Encrypt issuer string, so RoboCertSentry's "only record LE certs" filter
+# accepts it. Used to verify the binding-event reconcile path records an issuance
+# without needing a real ACME round trip.
+[req]
+distinguished_name = dn
+x509_extensions = v3
+prompt = no
+
+[dn]
+O = Let's Encrypt
+CN = example.test
+
+[v3]
+subjectAltName = DNS:example.test, DNS:www.example.test
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment

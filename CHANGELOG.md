@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Local ACME simulation harness (tools/local-acme/) running Plesk, a Pebble ACME
+  CA, challtestsrv, and a spoof front, which verified end to end that an SSL binding
+  event drives the reconcile and records the issuance.
+- LetsEncryptIssuer matcher in the core that decides whether a certificate's issuer
+  is Let's Encrypt from a normalised form, unit tested.
 - Reproducible extension build script (tools/build-extension.sh) that stages the
   pure core and PSL data inside plib/ so they survive Plesk's install flattening.
 - Event Manager based live trigger: on install the extension registers handlers on
@@ -73,6 +78,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Certificate issuer filter rejected every real Let's Encrypt certificate because
+  openssl_x509_parse returns the issuer with its apostrophe stripped ("Lets
+  Encrypt"); the matcher now compares a normalised form. Found via the local ACME
+  simulation.
 - Packaging bug that would have shipped an extension whose pure core and PSL data
   were stripped on install, leaving it non-functional.
 - DNS-01 adapter calling a non-existent `pm_ApiCli` method.
