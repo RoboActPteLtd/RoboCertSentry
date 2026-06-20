@@ -3,14 +3,19 @@
 declare(strict_types=1);
 
 /**
- * Removes the periodic jobs this extension registered, so uninstalling leaves no
- * orphaned scheduler entries behind. The ledger in the var directory is left for
- * Plesk's own cleanup of the extension's data.
- *
- * NEEDS LIVE BOX: verify against pm_Scheduler on a real install.
+ * Removes everything this extension registered server-wide, so uninstalling leaves
+ * no orphaned Event Manager handlers or scheduler tasks behind. The ledger in the
+ * var directory is left for Plesk's own cleanup of the extension's data.
  */
 
 Modules_Robocertsentry_Autoloader::register();
+
+try {
+    Modules_Robocertsentry_EventHandlers::removeOurs();
+    pm_Log::info('RoboCertSentry event handlers removed');
+} catch (Throwable $e) {
+    pm_Log::err('RoboCertSentry event handler removal failed: ' . $e->getMessage());
+}
 
 try {
     $scheduler = pm_Scheduler::getInstance();
@@ -24,5 +29,5 @@ try {
 
     pm_Log::info('RoboCertSentry scheduled tasks removed');
 } catch (Throwable $e) {
-    pm_Log::err('RoboCertSentry pre-uninstall failed: ' . $e->getMessage());
+    pm_Log::err('RoboCertSentry scheduler task removal failed: ' . $e->getMessage());
 }

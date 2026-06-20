@@ -6,13 +6,11 @@ declare(strict_types=1);
  * Bridges Plesk's class loader to the PSR-4 domain core.
  *
  * Plesk autoloads only its own "Modules_<Id>_*" classes from plib/library; the
- * tested core lives under the RoboAct\CertSentry\ namespace and ships either as a
- * Composer package (plib/vendor) or as bundled source. This registers whichever
- * is present so the thin Plesk classes can lean on the same code the tests cover.
- *
- * NEEDS LIVE BOX: the exact location of the bundled core and Composer vendor dir
- * after the extension is packaged and extracted must be confirmed on a real Plesk
- * install; the candidate paths below are defensive rather than verified.
+ * tested core lives under the RoboAct\CertSentry\ namespace. Plesk flattens the
+ * packaged plib/ into the module root on install (verified on Plesk 18.0.78), so
+ * the core and its data ship inside plib/ and land at the module root, which
+ * pm_Context::getPlibDir() reports. This registers a PSR-4 loader rooted there,
+ * preferring a Composer vendor autoload if the package was built with one.
  */
 final class Modules_Robocertsentry_Autoloader
 {
@@ -25,23 +23,18 @@ final class Modules_Robocertsentry_Autoloader
         }
         self::$registered = true;
 
-        $extensionRoot = dirname(__DIR__, 2);
+        $moduleRoot = self::moduleRoot();
 
-        foreach ([
-            $extensionRoot . '/plib/vendor/autoload.php',
-            $extensionRoot . '/vendor/autoload.php',
-        ] as $composerAutoload) {
-            if (is_file($composerAutoload)) {
-                require_once $composerAutoload;
-                break;
-            }
+        $composerAutoload = $moduleRoot . '/vendor/autoload.php';
+        if (is_file($composerAutoload)) {
+            require_once $composerAutoload;
         }
 
         if (class_exists(\RoboAct\CertSentry\Issuance\IdentifierSet::class)) {
             return;
         }
 
-        $sourceRoot = self::locateSourceRoot($extensionRoot);
+        $sourceRoot = $moduleRoot . '/src/RoboAct/CertSentry';
         spl_autoload_register(static function (string $class) use ($sourceRoot): void {
             $prefix = 'RoboAct\\CertSentry\\';
             if (!str_starts_with($class, $prefix)) {
@@ -56,19 +49,17 @@ final class Modules_Robocertsentry_Autoloader
         });
     }
 
-    private static function locateSourceRoot(string $extensionRoot): string
+    /**
+     * The installed module's root directory. pm_Context::getPlibDir() reports it
+     * directly under Plesk; the dirname fallback keeps the loader usable if it is
+     * ever exercised before the context is initialised.
+     */
+    private static function moduleRoot(): string
     {
-        foreach ([
-            $extensionRoot . '/src/RoboAct/CertSentry',
-            $extensionRoot . '/plib/src/RoboAct/CertSentry',
-        ] as $candidate) {
-            if (is_dir($candidate)) {
-                return $candidate;
-            }
+        if (class_exists('pm_Context')) {
+            return rtrim(pm_Context::getPlibDir(), '/');
         }
 
-        // Fall back to the conventional layout so the failure, if any, is a clear
-        // missing-file error rather than a silent no-op autoloader.
-        return $extensionRoot . '/src/RoboAct/CertSentry';
+        return dirname(__DIR__);
     }
 }

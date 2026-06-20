@@ -34,11 +34,12 @@ and both converge on one tested seam (`Ingest\CertificateObservationRecorder`) s
 the rules for bucketing, renewal classification, and de-duplication live in a
 single place:
 
-- **Live (primary).** Plesk exposes no certificate-issuance event, so an event
-  listener subscribes to the domain, subdomain, DNS, and hosting events that ride
-  alongside an issuance and, on each, reconciles the current certificate inventory
-  into the ledger (`Ingest\CertificateSync`). The reconcile is idempotent, so
-  re-seeing a certificate is expected, not an error.
+- **Live (primary).** Plesk exposes no certificate-issuance event, so the extension
+  registers Plesk Event Manager handlers on the SSL/TLS binding events (the closest
+  signal, since a new certificate is then bound to its service) that, on each,
+  reconcile the current certificate inventory into the ledger
+  (`Ingest\CertificateSync`). The reconcile is idempotent, so re-seeing a
+  certificate is expected, not an error.
 - **Backfill / reconciliation.** A scheduled job parses Plesk's certificate
   operation log (`Ingest\Log\LogImporter`) to populate history and catch anything
   the live path missed. Re-importing an overlapping window never double-counts.

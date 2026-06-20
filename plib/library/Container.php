@@ -130,8 +130,9 @@ final class Modules_Robocertsentry_Container
     }
 
     /**
-     * NEEDS LIVE BOX: confirm pm_Context::getVarDir() resolves to the expected
-     * writable per-extension directory and that PDO SQLite is available there.
+     * The durable ledger lives in the extension's writable var directory. Verified
+     * on Plesk 18.0.78: getVarDir() resolves to /opt/psa/var/modules/<id>/ and
+     * pdo_sqlite is present in the Plesk PHP runtime.
      */
     private static function databasePath(): string
     {
@@ -139,12 +140,12 @@ final class Modules_Robocertsentry_Container
     }
 
     /**
-     * NEEDS LIVE BOX: confirm the Public Suffix List data file is packaged at this
-     * path once the extension is built and extracted.
+     * The Public Suffix List ships inside plib/ and so lands in the module root,
+     * which pm_Context::getPlibDir() reports (verified on Plesk 18.0.78).
      */
     private static function publicSuffixListContents(): string
     {
-        $path = dirname(__DIR__, 2) . '/data/public_suffix_list.dat';
+        $path = rtrim(pm_Context::getPlibDir(), '/') . '/data/public_suffix_list.dat';
         $contents = is_file($path) ? file_get_contents($path) : false;
 
         if ($contents === false) {

@@ -7,16 +7,14 @@ use RoboAct\CertSentry\Advice\Dns01Capability;
 /**
  * Tells the advisor whether this server can issue a wildcard at all.
  *
- * A wildcard certificate is only obtainable through the DNS-01 challenge, which in
- * turn needs Plesk to be able to write the _acme-challenge TXT record, either
- * because Plesk hosts the zone or because a DNS-syncing extension does. Plesk
- * exposes no single "DNS-01 ready" flag, so this adapter answers from an explicit
- * operator setting when present and otherwise from whether the Plesk DNS service
- * is enabled.
+ * A wildcard certificate is only obtainable through the DNS-01 challenge, which
+ * needs Plesk to be able to write the _acme-challenge TXT record. That is possible
+ * when Plesk is the authoritative (master) DNS server for a zone. This answers
+ * from an explicit operator setting when present, and otherwise reports true if
+ * any domain on the server has an enabled master DNS zone.
  *
- * NEEDS LIVE BOX: the DNS-service detection below is the inferred signal; confirm
- * the correct pm_ApiCli/pm_Domain call that proves a domain's zone is writable by
- * Plesk, and prefer that over the coarse server-wide check.
+ * Verified on Plesk 18.0.78: pm_Domain::getDnsZone() returns a pm_Dns_Zone whose
+ * isEnabled()/isMaster() expose exactly this signal.
  */
 final class Modules_Robocertsentry_Plesk_Dns01Capability implements Dns01Capability
 {
@@ -27,19 +25,24 @@ final class Modules_Robocertsentry_Plesk_Dns01Capability implements Dns01Capabil
             return filter_var($override, FILTER_VALIDATE_BOOLEAN);
         }
 
-        return $this->pleskDnsServiceEnabled();
+        return $this->anyDomainHasMasterZone();
     }
 
-    private function pleskDnsServiceEnabled(): bool
+    private function anyDomainHasMasterZone(): bool
     {
-        try {
-            $result = pm_ApiCli::callBin('dns', ['--status'], pm_ApiCli::RESULT_FULL);
-
-            return ($result['code'] ?? 1) === 0 && stripos($result['stdout'] ?? '', 'active') !== false;
-        } catch (Throwable) {
-            // A failure to interrogate DNS is not proof of capability; treat it as
-            // "cannot confirm", which keeps wildcard suggestions honestly cautious.
-            return false;
+        foreach (pm_Domain::getAllDomains() as $domain) {
+            try {
+                $zone = $domain->getDnsZone();
+                if ($zone->isEnabled() && $zone->isMaster()) {
+                    return true;
+                }
+            } catch (Throwable) {
+                // A domain whose zone cannot be read tells us nothing; keep looking
+                // rather than mistaking it for proof either way.
+                continue;
+            }
         }
+
+        return false;
     }
 }
