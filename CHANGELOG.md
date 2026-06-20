@@ -24,3 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wildcard consolidation advisor that recommends collapsing many per-subdomain
   certificates into one wildcard as the per-registered-domain bucket tightens,
   gated on DNS-01 availability since wildcards require the DNS-01 challenge.
+- Source-agnostic ingestion: ObservedCertificate as the common currency and
+  CertificateObservationRecorder as the single convergence seam that resolves
+  registered domains, classifies renewals, and stays idempotent so the live and
+  backfill sources can both feed the ledger without double-counting.
+- Live ingestion path: a CertificateInventory port and CertificateSync that
+  reconciles the current certificate inventory into the ledger, the workaround for
+  Plesk exposing no native certificate-issuance event.
+- Backfill ingestion path: a tolerant CertOperationLogParser and LogImporter that
+  recover issuances from Plesk's certificate operation logs.
+- Reporting: UsageReportBuilder and LimitUsage expose the standing per-registered-
+  domain and per-account usage the dashboard shows, counted identically to the guard.
+- Pre-flight presentation: PreflightPresenter and PreflightView shape a guard
+  decision and any wildcard advice into a render-ready view for the UI.
