@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Apache License 2.0 (LICENSE) and attribution NOTICE, copyright RoboAct Pte Ltd.
 - Local ACME simulation harness (tools/local-acme/) running Plesk, a Pebble ACME
   CA, challtestsrv, and a spoof front, which verified end to end that an SSL binding
   event drives the reconcile and records the issuance.
