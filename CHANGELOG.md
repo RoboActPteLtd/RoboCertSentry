@@ -58,8 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   handlers. The Plesk-bound layer is thin and delegates to the tested core.
 - EventHandlers helper with a unit-tested parser for the `event_handler --list`
   output (fixture captured from a live Plesk Obsidian 18.0.78 box).
-- INTEGRATION.md documenting exactly what must be verified on a live Plesk install
-  and the configurable extension settings.
 
 ### Changed
 

@@ -60,8 +60,8 @@ single place:
 ## What needs a live Plesk box
 
 The Plesk-specific layer is kept thin and behind interfaces; everything else is
-unit-tested. The items requiring verification on a real Plesk install are listed
-in [INTEGRATION.md](INTEGRATION.md).
+unit-tested. The items requiring verification on a real Plesk install are tracked
+in the [project wiki](https://github.com/RoboActPteLtd/RoboCertSentry/wiki).
 
 ## Development
 
